@@ -1,0 +1,31 @@
+# Stage 1: Build the app
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy package files first (better caching)
+COPY package*.json ./
+
+# Install dependencies
+RUN npm install && \
+    npm install tailwindcss @tailwindcss/vite && \
+    npm install -D daisyui@latest
+
+# Copy all source code
+COPY . .
+
+# Build production app
+RUN npm run build
+
+
+# Stage 2: Serve with Nginx
+FROM nginx:alpine
+
+RUN rm -rf /usr/share/nginx/html/*
+
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# IMPORTANT: nginx default port is 80
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
